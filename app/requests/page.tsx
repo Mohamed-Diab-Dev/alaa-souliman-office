@@ -3,7 +3,7 @@ import { CalendarPlus, Plus } from "lucide-react";
 import { requireCitizen } from "@/lib/auth/citizen";
 import { signVoiceUrl } from "@/app/actions/requests";
 import { cancelAppointment } from "@/app/actions/appointments";
-import { StatusBadge } from "@/components/status-badge";
+import { RequestStatus } from "@/components/request-status";
 import { getCitizenAppointments } from "@/lib/data/booking";
 import { categoryLabel } from "@/lib/constants";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -96,15 +96,15 @@ export default async function RequestsPage() {
           <div className="mt-4 space-y-4">
             {requests.map((request) => (
               <article key={request.id} className="rounded-3xl bg-white p-5 card-shadow">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="font-black text-forest">
-                    طلب رقم {request.request_number}
-                  </p>
-                  <StatusBadge status={request.status} />
-                </div>
-                <p className="mt-2 text-sm text-muted">
+                <p className="font-black text-forest">
+                  طلب رقم {request.request_number}
+                </p>
+                <p className="mt-1 text-sm text-muted">
                   {categoryLabel(request.category)} · {formatArabicDateTime(request.created_at)}
                 </p>
+                <div className="mt-4">
+                  <RequestStatus status={request.status} />
+                </div>
                 {request.notes ? (
                   <p className="mt-3 leading-8">{request.notes}</p>
                 ) : null}

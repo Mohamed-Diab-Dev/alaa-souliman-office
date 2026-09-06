@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Cairo } from "next/font/google";
 import { getPublicContent } from "@/lib/data/public";
 import { SiteFooter } from "@/components/site-footer";
@@ -23,7 +24,9 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-cream font-sans text-ink">
-        <SiteHeader siteName={siteName} />
+        <Suspense fallback={null}>
+          <SiteHeader siteName={siteName} />
+        </Suspense>
         {children}
         <SiteFooter siteName={siteName} />
       </body>

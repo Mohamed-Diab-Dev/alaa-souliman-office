@@ -9,11 +9,36 @@ export const REQUEST_CATEGORIES = [
 ] as const;
 
 export const REQUEST_STATUSES = [
-  { id: "new", label: "طلب جديد", tone: "amber" },
-  { id: "reviewing", label: "قيد المراجعة", tone: "sky" },
-  { id: "in_progress", label: "جاري التنفيذ", tone: "violet" },
-  { id: "resolved", label: "تم الحل", tone: "emerald" },
-  { id: "rejected", label: "مرفوض", tone: "rose" },
+  {
+    id: "new",
+    label: "طلب جديد",
+    meaning: "طلبك وصل المكتب، ولسه بيتراجع.",
+    tone: "amber",
+  },
+  {
+    id: "reviewing",
+    label: "قيد المراجعة",
+    meaning: "المكتب بيراجع الطلب دلوقتي.",
+    tone: "sky",
+  },
+  {
+    id: "in_progress",
+    label: "جاري التنفيذ",
+    meaning: "المكتب شغال على طلبك.",
+    tone: "violet",
+  },
+  {
+    id: "resolved",
+    label: "تم الحل",
+    meaning: "الطلب خلص، وتم التعامل معاه.",
+    tone: "emerald",
+  },
+  {
+    id: "rejected",
+    label: "مرفوض",
+    meaning: "المكتب ما قدرش ينفّذ الطلب. شوف الرد تحت.",
+    tone: "rose",
+  },
 ] as const;
 
 export const APPOINTMENT_STATUSES = [

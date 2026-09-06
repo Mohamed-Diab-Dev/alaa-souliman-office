@@ -1,6 +1,8 @@
 import { getCitizenSession } from "@/lib/auth/citizen";
 import { getPublicContent } from "@/lib/data/public";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const [citizen, { siteName }] = await Promise.all([
     getCitizenSession(),

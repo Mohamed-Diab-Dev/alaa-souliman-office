@@ -1,30 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { logoutCitizen } from "@/app/actions/citizen-auth";
+import { getCitizenSession } from "@/lib/auth/citizen";
 import { Emblem } from "@/components/emblem";
-import type { CitizenSession } from "@/lib/types";
 
-export function SiteHeader({
-  siteName,
-}: {
-  siteName: string;
-}) {
-  const [citizen, setCitizen] = useState<CitizenSession | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/session")
-      .then((response) => response.json())
-      .then((data) => {
-        if (active) setCitizen(data.citizen ?? null);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, []);
+export async function SiteHeader({ siteName }: { siteName: string }) {
+  const citizen = await getCitizenSession();
 
   const links = [
     { href: "/", label: "الرئيسية" },

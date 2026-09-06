@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toEnglishDigits } from "@/lib/utils";
 import type { ActionResult } from "@/lib/types";
 
 function refresh() {
@@ -67,6 +68,22 @@ export async function deleteOfficeDate(formData: FormData) {
   refresh();
 }
 
+function parseTimeToMinutes(value: string) {
+  const cleaned = toEnglishDigits(value).trim();
+  const match = cleaned.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(total: number) {
+  const hours = String(Math.floor(total / 60)).padStart(2, "0");
+  const minutes = String(total % 60).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export async function addTimeSlots(
   _prev: ActionResult,
   formData: FormData,
@@ -78,39 +95,54 @@ export async function addTimeSlots(
   const interval = Number(formData.get("interval") ?? 30);
   const capacity = Number(formData.get("capacity") ?? 1);
 
-  if (!dateId || !start) return { error: "اختار اليوم ووقت البداية" };
+  if (!dateId) return { error: "اختار اليوم أولاً" };
 
-  const slots: Array<{ office_date_id: string; start_time: string; end_time: string | null; capacity: number }> = [];
+  const startMinutes = parseTimeToMinutes(start);
+  if (startMinutes === null) {
+    return { error: "اختار وقت البداية. مثال: من 10:00" };
+  }
 
-  if (end && interval > 0) {
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    let minutes = sh * 60 + sm;
-    const last = eh * 60 + em;
-    while (minutes < last) {
-      const next = minutes + interval;
-      const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
-      const mm = String(minutes % 60).padStart(2, "0");
-      const nh = String(Math.floor(Math.min(next, last) / 60)).padStart(2, "0");
-      const nm = String(Math.min(next, last) % 60).padStart(2, "0");
+  const slots: Array<{
+    office_date_id: string;
+    start_time: string;
+    end_time: string | null;
+    capacity: number;
+  }> = [];
+  const people = capacity > 0 ? capacity : 1;
+  const step = interval > 0 ? interval : 30;
+
+  if (end) {
+    const endMinutes = parseTimeToMinutes(end);
+    if (endMinutes === null) {
+      return { error: "وقت النهاية مش مفهوم. مثال: إلى 14:00" };
+    }
+    if (endMinutes <= startMinutes) {
+      return {
+        error: "وقت النهاية لازم يكون بعد البداية. مثال: من 10:00 إلى 14:00",
+      };
+    }
+
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += step) {
+      const next = Math.min(minutes + step, endMinutes);
       slots.push({
         office_date_id: dateId,
-        start_time: `${hh}:${mm}`,
-        end_time: `${nh}:${nm}`,
-        capacity: capacity > 0 ? capacity : 1,
+        start_time: minutesToTime(minutes),
+        end_time: minutesToTime(next),
+        capacity: people,
       });
-      minutes = next;
     }
   } else {
     slots.push({
       office_date_id: dateId,
-      start_time: start,
-      end_time: end || null,
-      capacity: capacity > 0 ? capacity : 1,
+      start_time: minutesToTime(startMinutes),
+      end_time: minutesToTime(startMinutes + step),
+      capacity: people,
     });
   }
 
-  if (slots.length === 0) return { error: "مفيش مواعيد تتولد من الأوقات دي" };
+  if (slots.length === 0) {
+    return { error: "مفيش مواعيد تتولد من الأوقات دي" };
+  }
 
   const supabase = createAdminClient();
   const { error } = await supabase.from("time_slots").upsert(slots, {
