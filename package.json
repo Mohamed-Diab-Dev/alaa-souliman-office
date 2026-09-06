@@ -1,5 +1,5 @@
 {
-  "name": "alaa-mp",
+  "name": "alaa-souliman",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.6",
+    "@supabase/supabase-js": "^2.115.0",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.41.0",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8"
