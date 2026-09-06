@@ -43,6 +43,12 @@ export async function saveAbout(
   }
 }
 
+function clampFocus(value: FormDataEntryValue | null) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 50;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
 export async function addSlide(
   _prev: ActionResult,
   formData: FormData,
@@ -50,6 +56,8 @@ export async function addSlide(
   await requireAdmin();
   const title = String(formData.get("title") ?? "").trim();
   const subtitle = String(formData.get("subtitle") ?? "").trim();
+  const focusX = clampFocus(formData.get("focus_x"));
+  const focusY = clampFocus(formData.get("focus_y"));
   const image = formData.get("image");
 
   if (!(image instanceof File) || image.size === 0) {
@@ -66,13 +74,30 @@ export async function addSlide(
       .limit(1)
       .maybeSingle();
 
-    const { error } = await supabase.from("landing_slides").insert({
+    const base = {
       title,
       subtitle,
       image_url: imageUrl,
       sort_order: (last?.sort_order ?? 0) + 1,
       is_active: true,
+    };
+
+    let { error } = await supabase.from("landing_slides").insert({
+      ...base,
+      focus_x: focusX,
+      focus_y: focusY,
     });
+
+    if (error?.message?.includes("focus_")) {
+      ({ error } = await supabase.from("landing_slides").insert(base));
+      if (!error) {
+        refreshPublic();
+        return {
+          success:
+            "تمت إضافة الصورة. نفّذ supabase/add-slide-focus.sql عشان تقدر تتحكم في الجزء الظاهر.",
+        };
+      }
+    }
     if (error) return { error: "إضافة الصورة فشلت" };
 
     refreshPublic();
@@ -80,6 +105,36 @@ export async function addSlide(
   } catch (error) {
     return { error: error instanceof Error ? error.message : "حصل خطأ" };
   }
+}
+
+export async function updateSlideFocus(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "").trim();
+  const focusX = clampFocus(formData.get("focus_x"));
+  const focusY = clampFocus(formData.get("focus_y"));
+
+  if (!id) return { error: "السلايد غير موجود" };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("landing_slides")
+    .update({ focus_x: focusX, focus_y: focusY })
+    .eq("id", id);
+
+  if (error) {
+    if (error.message.includes("focus_")) {
+      return {
+        error: "نفّذ ملف supabase/add-slide-focus.sql في Supabase أولاً",
+      };
+    }
+    return { error: "حفظ موضع الصورة فشل" };
+  }
+
+  refreshPublic();
+  return { success: "تم حفظ موضع الصورة" };
 }
 
 export async function deleteSlide(formData: FormData) {

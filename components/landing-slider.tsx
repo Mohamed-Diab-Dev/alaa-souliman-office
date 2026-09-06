@@ -33,6 +33,9 @@ export function LandingSlider({
             src={slide.image_url}
             alt={slide.title || siteName}
             className="h-full w-full object-cover opacity-55"
+            style={{
+              objectPosition: `${slide.focus_x ?? 50}% ${slide.focus_y ?? 50}%`,
+            }}
           />
         ) : (
           <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,#c9a22733,transparent_35%),linear-gradient(135deg,#08241c,#0d3b2e_55%,#1a5a43)]" />

@@ -36,6 +36,8 @@ create table if not exists landing_slides (
   image_url text not null,
   title text not null default '',
   subtitle text not null default '',
+  focus_x int not null default 50 check (focus_x >= 0 and focus_x <= 100),
+  focus_y int not null default 50 check (focus_y >= 0 and focus_y <= 100),
   sort_order int not null default 0,
   is_active boolean not null default true,
   created_at timestamptz not null default now()

@@ -16,6 +16,8 @@ export type LandingSlide = {
   image_url: string;
   title: string;
   subtitle: string;
+  focus_x: number;
+  focus_y: number;
   sort_order: number;
   is_active: boolean;
 };

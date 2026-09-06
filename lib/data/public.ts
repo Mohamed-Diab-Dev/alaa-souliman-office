@@ -28,7 +28,7 @@ async function loadPublicContent() {
     supabase.from("site_settings").select("key, value"),
     supabase
       .from("landing_slides")
-      .select("id, image_url, title, subtitle, sort_order, is_active")
+      .select("id, image_url, title, subtitle, focus_x, focus_y, sort_order, is_active")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabase
@@ -54,6 +54,16 @@ async function loadPublicContent() {
     }));
   }
 
+  let slideRows = slidesRes.data ?? [];
+  if (slidesRes.error) {
+    const fallback = await supabase
+      .from("landing_slides")
+      .select("id, image_url, title, subtitle, sort_order, is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    slideRows = fallback.data ?? [];
+  }
+
   const settings = new Map(
     (settingsRes.data ?? []).map((row) => [row.key, row.value]),
   );
@@ -63,7 +73,16 @@ async function loadPublicContent() {
     bookingMessage:
       settings.get("booking_closed_message") ||
       "لا توجد مواعيد متاحة حالياً.",
-    slides: (slidesRes.data ?? []) as LandingSlide[],
+    slides: slideRows.map((row) => ({
+      id: row.id,
+      image_url: row.image_url,
+      title: row.title,
+      subtitle: row.subtitle,
+      focus_x: "focus_x" in row && typeof row.focus_x === "number" ? row.focus_x : 50,
+      focus_y: "focus_y" in row && typeof row.focus_y === "number" ? row.focus_y : 50,
+      sort_order: row.sort_order,
+      is_active: row.is_active,
+    })) as LandingSlide[],
     about: (aboutRes.data as AboutSection | null) ?? fallbackAbout,
     achievements: achievementRows.map((row) => {
       const images = imagesFromAchievementRow(row);

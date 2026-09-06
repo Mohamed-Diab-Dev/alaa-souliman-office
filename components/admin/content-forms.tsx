@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Alert, SubmitButton } from "@/components/admin/form-status";
+import { ImageFocusControl } from "@/components/admin/image-focus-control";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import type { AboutSection, ActionResult, LandingSlide } from "@/lib/types";
 
@@ -10,12 +11,17 @@ export function ContentForms({
   slides,
   saveAbout,
   addSlide,
+  updateSlideFocus,
   deleteSlide,
 }: {
   about: AboutSection;
   slides: LandingSlide[];
   saveAbout: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
   addSlide: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
+  updateSlideFocus: (
+    prev: ActionResult,
+    formData: FormData,
+  ) => Promise<ActionResult>;
   deleteSlide: (formData: FormData) => Promise<void>;
 }) {
   const [aboutState, aboutAction] = useActionState(saveAbout, {});
@@ -29,20 +35,18 @@ export function ContentForms({
           <input name="title" className="field" placeholder="العنوان على الصورة" />
           <input name="subtitle" className="field" placeholder="النص تحت العنوان" />
           <ImageUploadField name="image" label="صورة السلايد" required />
+          <ImageFocusControl />
           <Alert error={slideState.error} success={slideState.success} />
           <SubmitButton>إضافة صورة</SubmitButton>
         </form>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
           {slides.map((slide) => (
-            <figure key={slide.id} className="overflow-hidden rounded-2xl bg-sand">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={slide.image_url} alt={slide.title} className="h-32 w-full object-cover" />
-              <figcaption className="p-3 text-sm font-bold">{slide.title || "بدون عنوان"}</figcaption>
-              <form action={deleteSlide} className="px-3 pb-3">
-                <input type="hidden" name="id" value={slide.id} />
-                <button className="text-sm font-bold text-rose-700">حذف</button>
-              </form>
-            </figure>
+            <SlideFocusCard
+              key={slide.id}
+              slide={slide}
+              updateSlideFocus={updateSlideFocus}
+              deleteSlide={deleteSlide}
+            />
           ))}
         </div>
       </section>
@@ -58,5 +62,44 @@ export function ContentForms({
         </form>
       </section>
     </div>
+  );
+}
+
+function SlideFocusCard({
+  slide,
+  updateSlideFocus,
+  deleteSlide,
+}: {
+  slide: LandingSlide;
+  updateSlideFocus: (
+    prev: ActionResult,
+    formData: FormData,
+  ) => Promise<ActionResult>;
+  deleteSlide: (formData: FormData) => Promise<void>;
+}) {
+  const [state, action] = useActionState(updateSlideFocus, {});
+
+  return (
+    <figure className="overflow-hidden rounded-2xl bg-sand">
+      <figcaption className="border-b border-black/5 px-4 py-3 text-sm font-bold text-forest">
+        {slide.title || "بدون عنوان"}
+      </figcaption>
+      <form action={action} className="space-y-3 p-4">
+        <input type="hidden" name="id" value={slide.id} />
+        <ImageFocusControl
+          imageUrl={slide.image_url}
+          defaultX={slide.focus_x}
+          defaultY={slide.focus_y}
+        />
+        <Alert error={state.error} success={state.success} />
+        <SubmitButton>حفظ موضع الصورة</SubmitButton>
+      </form>
+      <form action={deleteSlide} className="px-4 pb-4">
+        <input type="hidden" name="id" value={slide.id} />
+        <button type="submit" className="text-sm font-bold text-rose-700">
+          حذف
+        </button>
+      </form>
+    </figure>
   );
 }
