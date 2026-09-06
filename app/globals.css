@@ -116,3 +116,59 @@ textarea.field {
     transform: scale(1.08);
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .bookings-print-root,
+  .bookings-print-root * {
+    visibility: visible !important;
+  }
+
+  .bookings-print-root {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .bookings-print-table {
+    width: 100%;
+    border: 1px solid #111;
+  }
+
+  .bookings-print-table th,
+  .bookings-print-table td {
+    border: 1px solid #333;
+    color: #111 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .bookings-print-table thead {
+    background: #eee !important;
+  }
+}

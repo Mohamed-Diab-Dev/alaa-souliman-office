@@ -124,15 +124,31 @@ export function BookingsBoard({
     URL.revokeObjectURL(url);
   }
 
-  return (
-    <section className="rounded-3xl bg-white p-6 card-shadow">
-      <h2 className="text-2xl font-black text-forest">حجوزات المواطنين</h2>
-      <p className="mt-2 leading-8 text-muted">
-        اختار المكتب، بعدين يوم تواجد النائب، وهتشوف المواعيد في جدول. تقدر تصدّر
-        الجدول لشيت يفتح في Excel أو Google Sheets.
-      </p>
+  function printTable() {
+    if (!selectedDay || selectedDay.slots.length === 0) return;
+    window.print();
+  }
 
-      <label className="mt-5 block space-y-1">
+  return (
+    <section className="bookings-print-root rounded-3xl bg-white p-6 card-shadow">
+      <div className="no-print">
+        <h2 className="text-2xl font-black text-forest">حجوزات المواطنين</h2>
+        <p className="mt-2 leading-8 text-muted">
+          اختار المكتب، بعدين يوم تواجد النائب، وهتشوف المواعيد في جدول. تقدر تصدّر
+          شيت أو تطبع الجدول مباشرة من الموقع.
+        </p>
+      </div>
+
+      <div className="print-only mb-4 hidden">
+        <h2 className="text-2xl font-black text-forest">جدول حجوزات المواطنين</h2>
+        {office && selectedDay ? (
+          <p className="mt-2 text-base font-bold text-forest">
+            {office.name} · {formatArabicDate(selectedDay.work_date)}
+          </p>
+        ) : null}
+      </div>
+
+      <label className="no-print mt-5 block space-y-1">
         <span className="text-sm font-bold text-forest">المكتب</span>
         <select
           className="field"
@@ -152,7 +168,7 @@ export function BookingsBoard({
       </label>
 
       {officeId ? (
-        <div className="mt-5">
+        <div className="no-print mt-5">
           <p className="mb-3 text-sm font-bold text-forest">أيام التواجد</p>
           {officeDays.length === 0 ? (
             <p className="rounded-2xl bg-amber-50 px-4 py-3 text-amber-950">
@@ -194,7 +210,15 @@ export function BookingsBoard({
             <h3 className="text-xl font-black text-forest">
               مواعيد {formatArabicDate(selectedDay.work_date)}
             </h3>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="no-print flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={printTable}
+                disabled={selectedDay.slots.length === 0}
+                className="rounded-2xl border border-forest/20 px-4 py-2 text-sm font-black text-forest disabled:opacity-50"
+              >
+                طباعة
+              </button>
               <button
                 type="button"
                 onClick={exportSheet}
@@ -216,7 +240,7 @@ export function BookingsBoard({
             </p>
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-forest/10">
-              <table className="min-w-full border-collapse text-sm">
+              <table className="bookings-print-table min-w-full border-collapse text-sm">
                 <thead className="bg-forest text-cream">
                   <tr>
                     <th className="px-3 py-3 text-right font-black">الميعاد</th>
@@ -224,7 +248,7 @@ export function BookingsBoard({
                     <th className="px-3 py-3 text-right font-black">الرقم القومي</th>
                     <th className="px-3 py-3 text-right font-black">التليفون</th>
                     <th className="px-3 py-3 text-right font-black">الحالة</th>
-                    <th className="px-3 py-3 text-right font-black">إجراءات</th>
+                    <th className="no-print px-3 py-3 text-right font-black">إجراءات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,7 +266,7 @@ export function BookingsBoard({
                       </td>
                       <td className="whitespace-nowrap px-3 py-3 text-muted">{row.phones}</td>
                       <td className="whitespace-nowrap px-3 py-3 font-bold">{row.status}</td>
-                      <td className="px-3 py-3">
+                      <td className="no-print px-3 py-3">
                         <div className="flex flex-wrap items-center gap-2">
                           {row.bookingId && row.status === "مؤكد" ? (
                             <>
