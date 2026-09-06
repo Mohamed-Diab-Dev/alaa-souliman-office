@@ -85,6 +85,8 @@ create table if not exists office_dates (
   id uuid primary key default gen_random_uuid(),
   office_id uuid not null references offices (id) on delete cascade,
   work_date date not null,
+  is_cancelled boolean not null default false,
+  cancel_message text not null default '',
   unique (office_id, work_date)
 );
 
@@ -122,6 +124,7 @@ create table if not exists appointments (
   citizen_id uuid not null references citizens (id) on delete cascade,
   time_slot_id uuid not null references time_slots (id) on delete cascade,
   status text not null default 'confirmed' check (status in ('confirmed', 'cancelled', 'completed')),
+  admin_note text not null default '',
   created_at timestamptz not null default now()
 );
 

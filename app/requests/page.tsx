@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarPlus, Plus } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 import { requireCitizen } from "@/lib/auth/citizen";
 import { signVoiceUrl } from "@/app/actions/requests";
 import { cancelAppointment } from "@/app/actions/appointments";
@@ -40,30 +40,55 @@ export default async function RequestsPage() {
   const upcoming = appointments.filter(
     (item) => item.status === "confirmed" && item.work_date >= today,
   );
+  const notices = appointments
+    .filter(
+      (item) =>
+        item.admin_note && (item.status === "cancelled" || item.status === "confirmed"),
+    )
+    .slice(0, 8);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
       <h1 className="text-3xl font-black text-forest">أهلاً {citizen.name}</h1>
-      <p className="mt-2 text-muted">هنا طلباتك ومواعيدك بس. محدش غيرك شايفهم.</p>
+      <p className="mt-2 text-muted">
+        هنا تتابع طلباتك ومواعيدك. تقديم الطلب بيتم من المكتب.
+      </p>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <Link
-          href="/requests/new"
-          className="rounded-[2rem] bg-forest p-6 text-cream card-shadow"
-        >
-          <Plus className="h-10 w-10 text-gold" />
-          <p className="mt-4 text-2xl font-black">قدّم طلب جديد</p>
-          <p className="mt-2 text-cream/80">احكي بصوتك أو بمساعدة حد من أهلك</p>
-        </Link>
+      <div className="mt-8">
         <Link
           href="/book"
-          className="rounded-[2rem] bg-gold p-6 text-forest-deep card-shadow"
+          className="inline-flex max-w-md flex-col rounded-[2rem] bg-gold p-6 text-forest-deep card-shadow"
         >
           <CalendarPlus className="h-10 w-10" />
           <p className="mt-4 text-2xl font-black">احجز معاد</p>
           <p className="mt-2 text-forest-deep/80">اختار المكتب وبعدين اليوم والساعة</p>
         </Link>
       </div>
+
+      {notices.length > 0 ? (
+        <section className="mt-10 space-y-4">
+          <h2 className="text-2xl font-black text-forest">رسائل المواعيد</h2>
+          {notices.map((item) => (
+            <div
+              key={`note-${item.id}`}
+              className={`rounded-3xl p-5 card-shadow ${
+                item.status === "cancelled" ? "bg-rose-50" : "bg-amber-50"
+              }`}
+            >
+              <p className="text-lg font-black text-forest">
+                {item.status === "cancelled" ? "ميعاد ملغي" : "تحديث على معادك"}
+              </p>
+              <p className="mt-1 text-muted">
+                {item.office_name}
+                {item.work_date
+                  ? ` · ${formatArabicDate(item.work_date)} · ${formatArabicTime(item.start_time)}`
+                  : ""}
+              </p>
+              <p className="mt-3 whitespace-pre-line leading-8 text-ink">{item.admin_note}</p>
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       {upcoming.length > 0 ? (
         <section className="mt-10 space-y-4">
@@ -75,6 +100,11 @@ export default async function RequestsPage() {
               <p className="mt-3 text-lg font-bold">
                 {formatArabicDate(item.work_date)} · {formatArabicTime(item.start_time)}
               </p>
+              {item.admin_note ? (
+                <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 leading-8 text-amber-950">
+                  {item.admin_note}
+                </p>
+              ) : null}
               <form action={cancelAppointment} className="mt-4">
                 <input type="hidden" name="appointment_id" value={item.id} />
                 <button className="rounded-full border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700">
@@ -90,7 +120,7 @@ export default async function RequestsPage() {
         <h2 className="text-2xl font-black text-forest">طلباتي</h2>
         {requests.length === 0 ? (
           <p className="mt-4 rounded-3xl bg-white p-8 text-muted card-shadow">
-            لسه مفيش طلبات. اضغط على الزر الأخضر الكبير وقدّم أول طلب.
+            لسه مفيش طلبات. المكتب هو اللي بيسجّل الطلب، وبعدها هيظهر هنا تتابع حالته.
           </p>
         ) : (
           <div className="mt-4 space-y-4">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarCheck, FileAudio, ShieldCheck } from "lucide-react";
+import { CalendarCheck, ShieldCheck } from "lucide-react";
 import { getPublicContent } from "@/lib/data/public";
 import { LandingSlider } from "@/components/landing-slider";
 
@@ -42,38 +42,42 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-16">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            {
-              icon: FileAudio,
-              title: "قدّم طلبك",
-              text: "احكي المشكلة بصوتك من غير كتابة.",
-            },
-            {
-              icon: ShieldCheck,
-              title: "تابع الحالة",
-              text: "كل مواطن يشوف طلباته هو بس.",
-            },
-            {
-              icon: CalendarCheck,
-              title: "احجز معاد",
-              text: "اختار المكتب واليوم والساعة المتاحة.",
-            },
-          ].map((item) => (
-            <div key={item.title} className="rounded-3xl bg-white p-6 card-shadow">
-              <item.icon className="h-8 w-8 text-gold" />
-              <h3 className="mt-4 text-xl font-black text-forest">{item.title}</h3>
-              <p className="mt-2 leading-8 text-muted">{item.text}</p>
-            </div>
-          ))}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Link
+            href="/book"
+            className="rounded-3xl bg-white p-6 card-shadow transition hover:-translate-y-0.5"
+          >
+            <CalendarCheck className="h-8 w-8 text-gold" />
+            <h3 className="mt-4 text-xl font-black text-forest">احجز معاد</h3>
+            <p className="mt-2 leading-8 text-muted">
+              بالاسم ورقم التليفون من غير تسجيل دخول. اختار المكتب واليوم والساعة.
+            </p>
+            <span className="mt-5 inline-flex rounded-full bg-forest px-4 py-2 text-sm font-bold text-cream">
+              ابدأ الحجز
+            </span>
+          </Link>
+
+          <Link
+            href="/login?next=/requests"
+            className="rounded-3xl bg-white p-6 card-shadow transition hover:-translate-y-0.5"
+          >
+            <ShieldCheck className="h-8 w-8 text-gold" />
+            <h3 className="mt-4 text-xl font-black text-forest">تابع الحالة</h3>
+            <p className="mt-2 leading-8 text-muted">
+              دخول بالرقم القومي والتليفون عشان تشوف طلباتك ومتابعة حالتها.
+            </p>
+            <span className="mt-5 inline-flex rounded-full border border-forest/15 px-4 py-2 text-sm font-bold text-forest">
+              دخول لمتابعة الطلب
+            </span>
+          </Link>
         </div>
 
         <div className="mt-10 flex flex-wrap gap-3">
           <Link
-            href="/requests"
+            href="/book"
             className="rounded-full bg-forest px-6 py-3 font-black text-cream"
           >
-            ادخل على طلباتك
+            احجز معاد
           </Link>
           <Link
             href="/achievements"

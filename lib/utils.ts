@@ -38,6 +38,13 @@ export function isValidPhone(value: string) {
   return /^01[0125]\d{8}$/.test(normalizePhone(value));
 }
 
+/** رقم قومي شكلي لحجز الزائر — مش ينفع يدخل بيه (مش بيبدأ بـ 2 أو 3) */
+export function guestNationalIdFromPhone(phone: string) {
+  const normalized = normalizePhone(phone);
+  if (!normalized || normalized.length !== 11) return "";
+  return `9000${normalized.slice(1)}`;
+}
+
 export function cairoToday() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" });
 }

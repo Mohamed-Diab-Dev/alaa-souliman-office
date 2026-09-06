@@ -9,14 +9,20 @@ import type { BookableOffice } from "@/lib/types";
 export function BookingWizard({
   offices,
   closedMessage,
+  citizenName = "",
+  requireContact = true,
 }: {
   offices: BookableOffice[];
   closedMessage: string;
+  citizenName?: string;
+  requireContact?: boolean;
 }) {
   const router = useRouter();
   const [officeId, setOfficeId] = useState(offices[0]?.id ?? "");
   const [dateId, setDateId] = useState("");
   const [slotId, setSlotId] = useState("");
+  const [name, setName] = useState(citizenName);
+  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -42,10 +48,24 @@ export function BookingWizard({
 
   async function confirm() {
     if (!slotId) return;
+    if (requireContact) {
+      if (name.trim().length < 3) {
+        setError("اكتب الاسم الثلاثي على الأقل");
+        return;
+      }
+      if (!phone.trim()) {
+        setError("اكتب رقم التليفون");
+        return;
+      }
+    }
     setPending(true);
     setError("");
     const data = new FormData();
     data.set("slot_id", slotId);
+    if (requireContact) {
+      data.set("name", name.trim());
+      data.set("phone", phone.trim());
+    }
     const result = await bookAppointment(data);
     setPending(false);
     if (result.error) {
@@ -58,6 +78,38 @@ export function BookingWizard({
 
   return (
     <div className="space-y-6">
+      {requireContact ? (
+        <section className="rounded-3xl bg-white p-5 card-shadow">
+          <h2 className="mb-3 text-xl font-black text-forest">بياناتك</h2>
+          <p className="mb-4 text-sm leading-7 text-muted">
+            الحجز من غير تسجيل دخول. اكتب الاسم ورقم التليفون بس.
+          </p>
+          <div className="space-y-3">
+            <label className="block space-y-1">
+              <span className="text-sm font-bold text-forest">الاسم</span>
+              <input
+                className="field"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="الاسم الثلاثي"
+                required
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm font-bold text-forest">رقم التليفون</span>
+              <input
+                className="field"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="01xxxxxxxxx"
+                inputMode="tel"
+                required
+              />
+            </label>
+          </div>
+        </section>
+      ) : null}
+
       <section>
         <h2 className="mb-3 text-xl font-black text-forest">١) اختار المكتب</h2>
         <div className="grid gap-3 md:grid-cols-2">
@@ -134,6 +186,12 @@ export function BookingWizard({
         <div className="rounded-3xl bg-forest p-6 text-cream">
           <p className="text-sm text-gold-soft">الميعاد المختار</p>
           <p className="mt-2 text-xl font-black">{summary}</p>
+          {requireContact && name.trim() ? (
+            <p className="mt-2 text-cream/85">
+              باسم: {name.trim()}
+              {phone.trim() ? ` · ${phone.trim()}` : ""}
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={confirm}

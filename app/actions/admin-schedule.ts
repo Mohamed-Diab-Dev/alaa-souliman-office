@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { toEnglishDigits } from "@/lib/utils";
+import { toEnglishDigits, formatArabicDate } from "@/lib/utils";
 import type { ActionResult } from "@/lib/types";
 
 function refresh() {
   revalidatePath("/admin/schedule");
   revalidatePath("/admin/bookings");
   revalidatePath("/book");
+  revalidatePath("/requests");
 }
 
 function ymd(date: Date) {
@@ -163,3 +164,192 @@ export async function deleteTimeSlot(formData: FormData) {
   await supabase.from("time_slots").delete().eq("id", id);
   refresh();
 }
+
+function normalizeTime(value: string) {
+  return String(value).slice(0, 5);
+}
+
+export async function cancelOfficeDay(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  const dayId = String(formData.get("office_date_id") ?? "");
+  const bookingAction = String(formData.get("booking_action") ?? "cancel");
+  const targetDayId = String(formData.get("target_office_date_id") ?? "");
+  const message = String(formData.get("message") ?? "").trim();
+
+  if (!dayId) return { error: "اختار اليوم اللي هيتلغى" };
+  if (!message) return { error: "اكتب رسالة للمواطنين" };
+  if (!["cancel", "move"].includes(bookingAction)) {
+    return { error: "اختار إيه يحصل للحجوزات" };
+  }
+  if (bookingAction === "move" && !targetDayId) {
+    return { error: "اختار اليوم الجديد لترحيل الحجوزات" };
+  }
+  if (bookingAction === "move" && targetDayId === dayId) {
+    return { error: "يوم الترحيل لازم يكون يوم تاني" };
+  }
+
+  const supabase = createAdminClient();
+  const { data: sourceDay, error: sourceError } = await supabase
+    .from("office_dates")
+    .select("id, office_id, work_date, is_cancelled")
+    .eq("id", dayId)
+    .maybeSingle();
+
+  if (sourceError) {
+    return {
+      error:
+        "عمود إلغاء اليوم مش موجود. نفّذ ملف supabase/add-day-cancel.sql في Supabase أولاً.",
+    };
+  }
+  if (!sourceDay) return { error: "اليوم مش موجود" };
+  if (sourceDay.is_cancelled) return { error: "اليوم ده متلغي قبل كده" };
+
+  const { data: sourceSlots } = await supabase
+    .from("time_slots")
+    .select("id, start_time, capacity")
+    .eq("office_date_id", dayId);
+
+  const slots = sourceSlots ?? [];
+  const slotIds = slots.map((slot) => slot.id);
+
+  const { data: appointments } = slotIds.length
+    ? await supabase
+        .from("appointments")
+        .select("id, time_slot_id, status")
+        .in("time_slot_id", slotIds)
+        .eq("status", "confirmed")
+    : { data: [] };
+
+  const confirmed = appointments ?? [];
+  let cancelledCount = 0;
+  let movedCount = 0;
+  let failedMove = 0;
+
+  if (bookingAction === "cancel") {
+    if (confirmed.length > 0) {
+      const { error } = await supabase
+        .from("appointments")
+        .update({ status: "cancelled", admin_note: message })
+        .in(
+          "id",
+          confirmed.map((item) => item.id),
+        );
+      if (error) {
+        return {
+          error:
+            "إلغاء الحجوزات فشل. تأكد إنك نفّذت ملف supabase/add-day-cancel.sql",
+        };
+      }
+      cancelledCount = confirmed.length;
+    }
+  } else {
+    const { data: targetDay } = await supabase
+      .from("office_dates")
+      .select("id, office_id, work_date, is_cancelled")
+      .eq("id", targetDayId)
+      .maybeSingle();
+
+    if (!targetDay || targetDay.is_cancelled) {
+      return { error: "يوم الترحيل مش متاح" };
+    }
+    if (targetDay.office_id !== sourceDay.office_id) {
+      return { error: "الترحيل لازم يكون لنفس المكتب" };
+    }
+
+    const { data: targetSlots } = await supabase
+      .from("time_slots")
+      .select("id, start_time, capacity")
+      .eq("office_date_id", targetDayId);
+
+    if (!targetSlots || targetSlots.length === 0) {
+      return {
+        error:
+          "اليوم الجديد مفيهوش مواعيد خالص. ولّد مواعيد عليه الأول أو اختار يوم تاني.",
+      };
+    }
+
+    const targetByTime = new Map(
+      targetSlots.map((slot) => [normalizeTime(slot.start_time), slot]),
+    );
+    const sourceById = new Map(slots.map((slot) => [slot.id, slot]));
+
+    const targetSlotIds = targetSlots.map((slot) => slot.id);
+    const { data: targetBookings } = targetSlotIds.length
+      ? await supabase
+          .from("appointments")
+          .select("time_slot_id")
+          .in("time_slot_id", targetSlotIds)
+          .eq("status", "confirmed")
+      : { data: [] };
+
+    const used = new Map<string, number>();
+    for (const booking of targetBookings ?? []) {
+      used.set(booking.time_slot_id, (used.get(booking.time_slot_id) ?? 0) + 1);
+    }
+
+    for (const appointment of confirmed) {
+      const sourceSlot = sourceById.get(appointment.time_slot_id);
+      const targetSlot = sourceSlot
+        ? targetByTime.get(normalizeTime(sourceSlot.start_time))
+        : undefined;
+      const remaining = targetSlot
+        ? targetSlot.capacity - (used.get(targetSlot.id) ?? 0)
+        : 0;
+
+      if (targetSlot && remaining > 0) {
+        const note = `${message}\nتم ترحيل معادك لنفس الساعة يوم ${formatArabicDate(targetDay.work_date)}.`;
+        const { error } = await supabase
+          .from("appointments")
+          .update({ time_slot_id: targetSlot.id, admin_note: note })
+          .eq("id", appointment.id);
+        if (error) {
+          failedMove += 1;
+          continue;
+        }
+        used.set(targetSlot.id, (used.get(targetSlot.id) ?? 0) + 1);
+        movedCount += 1;
+      } else {
+        const note = `${message}\nمقدرناش نرحّل معادك لنفس الساعة، فالميعاد اتلغى. تواصل مع المكتب أو احجز من جديد.`;
+        const { error } = await supabase
+          .from("appointments")
+          .update({ status: "cancelled", admin_note: note })
+          .eq("id", appointment.id);
+        if (!error) cancelledCount += 1;
+        else failedMove += 1;
+      }
+    }
+  }
+
+  const { error: dayError } = await supabase
+    .from("office_dates")
+    .update({ is_cancelled: true, cancel_message: message })
+    .eq("id", dayId);
+
+  if (dayError) {
+    return {
+      error:
+        "الحجوزات اتعدلت بس تعليم اليوم كملغي فشل. نفّذ supabase/add-day-cancel.sql",
+    };
+  }
+
+  refresh();
+
+  if (bookingAction === "cancel") {
+    return {
+      success:
+        confirmed.length === 0
+          ? "تم إلغاء اليوم. مكانش فيه حجوزات مؤكدة."
+          : `تم إلغاء اليوم وإلغاء ${cancelledCount} حجز، والرسالة وصلت للمواطنين.`,
+    };
+  }
+
+  return {
+    success: `تم إلغاء اليوم. اترحّل ${movedCount} حجز، واتلغى ${cancelledCount}${
+      failedMove ? `، وفشل ${failedMove}` : ""
+    }.`,
+  };
+}
+

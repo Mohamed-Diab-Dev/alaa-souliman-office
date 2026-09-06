@@ -86,4 +86,5 @@ export type CitizenAppointment = {
   work_date: string;
   office_name: string;
   office_address: string;
+  admin_note: string;
 };

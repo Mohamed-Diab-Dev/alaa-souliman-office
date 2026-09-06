@@ -20,6 +20,8 @@ export type AdminOfficeDay = {
   id: string;
   office_id: string;
   work_date: string;
+  is_cancelled: boolean;
+  cancel_message: string;
   slots: AdminSlot[];
 };
 
@@ -36,13 +38,43 @@ export async function getAdminScheduleBoard() {
     return { offices: officeRows, days: [] as AdminOfficeDay[] };
   }
 
-  const { data: dates } = await supabase
+  let dateRows: Array<{
+    id: string;
+    office_id: string;
+    work_date: string;
+    is_cancelled?: boolean;
+    cancel_message?: string;
+    time_slots: Array<{
+      id: string;
+      start_time: string;
+      end_time: string | null;
+      capacity: number;
+    }> | null;
+  }> = [];
+
+  const withCancel = await supabase
     .from("office_dates")
-    .select("id, office_id, work_date, time_slots(id, start_time, end_time, capacity)")
+    .select(
+      "id, office_id, work_date, is_cancelled, cancel_message, time_slots(id, start_time, end_time, capacity)",
+    )
     .in("office_id", officeIds)
     .order("work_date", { ascending: true });
 
-  const dateRows = dates ?? [];
+  if (withCancel.error) {
+    const fallback = await supabase
+      .from("office_dates")
+      .select("id, office_id, work_date, time_slots(id, start_time, end_time, capacity)")
+      .in("office_id", officeIds)
+      .order("work_date", { ascending: true });
+    dateRows = (fallback.data ?? []).map((row) => ({
+      ...row,
+      is_cancelled: false,
+      cancel_message: "",
+    }));
+  } else {
+    dateRows = withCancel.data ?? [];
+  }
+
   const slotIds = dateRows.flatMap((date) =>
     (date.time_slots ?? []).map((slot) => slot.id),
   );
@@ -76,6 +108,8 @@ export async function getAdminScheduleBoard() {
     id: date.id,
     office_id: date.office_id,
     work_date: date.work_date,
+    is_cancelled: Boolean(date.is_cancelled),
+    cancel_message: date.cancel_message ?? "",
     slots: (date.time_slots ?? [])
       .slice()
       .sort((a, b) => a.start_time.localeCompare(b.start_time))

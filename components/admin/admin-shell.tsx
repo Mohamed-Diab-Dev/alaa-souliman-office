@@ -5,6 +5,7 @@ import { Emblem } from "@/components/emblem";
 const links = [
   { href: "/admin", label: "الرئيسية" },
   { href: "/admin/citizens", label: "تسجيل المواطنين" },
+  { href: "/admin/requests/new", label: "تقديم طلب" },
   { href: "/admin/requests", label: "الطلبات" },
   { href: "/admin/offices", label: "المكاتب" },
   { href: "/admin/schedule", label: "جدول المواعيد" },

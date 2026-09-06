@@ -17,14 +17,25 @@ export async function getBookableOffices(): Promise<BookableOffice[]> {
   const officeIds = offices.map((office) => office.id);
   if (officeIds.length === 0) return [];
 
-  const { data: dates } = await supabase
+  const datesRes = await supabase
     .from("office_dates")
-    .select("id, office_id, work_date")
+    .select("id, office_id, work_date, is_cancelled")
     .in("office_id", officeIds)
     .gte("work_date", today)
     .order("work_date", { ascending: true });
 
-  const dateRows = dates ?? [];
+  let dateRows: Array<{ id: string; office_id: string; work_date: string }> = [];
+  if (datesRes.error) {
+    const fallback = await supabase
+      .from("office_dates")
+      .select("id, office_id, work_date")
+      .in("office_id", officeIds)
+      .gte("work_date", today)
+      .order("work_date", { ascending: true });
+    dateRows = fallback.data ?? [];
+  } else {
+    dateRows = (datesRes.data ?? []).filter((date) => !date.is_cancelled);
+  }
   const dateIds = dateRows.map((row) => row.id);
 
   const { data: slots } = dateIds.length
@@ -77,12 +88,13 @@ export async function getBookableOffices(): Promise<BookableOffice[]> {
 
 export async function getCitizenAppointments(citizenId: string) {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  const withNote = await supabase
     .from("appointments")
     .select(
       `
       id,
       status,
+      admin_note,
       created_at,
       time_slots (
         start_time,
@@ -100,7 +112,35 @@ export async function getCitizenAppointments(citizenId: string) {
     .eq("citizen_id", citizenId)
     .order("created_at", { ascending: false });
 
-  if (error || !data) return [] as CitizenAppointment[];
+  const data =
+    withNote.error
+      ? (
+          await supabase
+            .from("appointments")
+            .select(
+              `
+      id,
+      status,
+      created_at,
+      time_slots (
+        start_time,
+        end_time,
+        office_dates (
+          work_date,
+          offices (
+            name,
+            address
+          )
+        )
+      )
+    `,
+            )
+            .eq("citizen_id", citizenId)
+            .order("created_at", { ascending: false })
+        ).data
+      : withNote.data;
+
+  if (!data) return [] as CitizenAppointment[];
 
   return data.map((row) => {
     const slot = Array.isArray(row.time_slots) ? row.time_slots[0] : row.time_slots;
@@ -124,6 +164,7 @@ export async function getCitizenAppointments(citizenId: string) {
       work_date: date?.work_date ?? "",
       office_name: office?.name ?? "مكتب",
       office_address: office?.address ?? "",
+      admin_note: "admin_note" in row ? String(row.admin_note ?? "") : "",
     } as CitizenAppointment;
   });
 }

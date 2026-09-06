@@ -22,8 +22,16 @@ export default async function RootLayout({
   const { siteName } = await getPublicContent();
 
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col bg-cream font-sans text-ink">
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${cairo.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body
+        className="flex min-h-full flex-col bg-cream font-sans text-ink"
+        suppressHydrationWarning
+      >
         <Suspense fallback={null}>
           <SiteHeader siteName={siteName} />
         </Suspense>

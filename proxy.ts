@@ -36,8 +36,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  const needsCitizen =
-    pathname.startsWith("/requests") || pathname.startsWith("/book");
+  const needsCitizen = pathname.startsWith("/requests");
 
   if (needsCitizen && !request.cookies.get(CITIZEN_COOKIE)?.value) {
     const login = new URL("/login", request.url);
@@ -49,5 +48,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/requests/:path*", "/book/:path*", "/admin/:path*"],
+  matcher: ["/requests/:path*", "/admin/:path*"],
 };
