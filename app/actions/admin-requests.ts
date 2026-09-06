@@ -30,18 +30,15 @@ export async function updateRequestStatus(
   return { success: "تم تحديث حالة الطلب" };
 }
 
-export async function updateAppointmentStatus(formData: FormData): Promise<ActionResult> {
+export async function updateAppointmentStatus(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!["confirmed", "cancelled", "completed"].includes(status)) {
-    return { error: "حالة غير صحيحة" };
-  }
+  if (!["confirmed", "cancelled", "completed"].includes(status)) return;
 
   const supabase = createAdminClient();
-  const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
-  if (error) return { error: "تحديث الموعد فشل" };
+  await supabase.from("appointments").update({ status }).eq("id", id);
   revalidatePath("/admin");
   revalidatePath("/admin/schedule");
-  return { success: "تم تحديث الموعد" };
+  revalidatePath("/admin/bookings");
 }

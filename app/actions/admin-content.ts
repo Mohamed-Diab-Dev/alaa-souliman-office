@@ -3,31 +3,13 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { uploadPublicImage } from "@/lib/storage";
 import type { ActionResult } from "@/lib/types";
 
 function refreshPublic() {
   revalidateTag("public-content", "max");
   revalidatePath("/");
   revalidatePath("/achievements");
-}
-
-async function uploadPublicImage(file: File, folder: string) {
-  if (!(file instanceof File) || file.size === 0) return null;
-  if (file.size > 6 * 1024 * 1024) {
-    throw new Error("الصورة كبيرة أوي (الحد 6 ميجا)");
-  }
-
-  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-  const path = `${folder}/${crypto.randomUUID()}.${ext}`;
-  const supabase = createAdminClient();
-  const { error } = await supabase.storage.from("media").upload(path, file, {
-    contentType: file.type || "image/jpeg",
-    upsert: false,
-  });
-  if (error) throw new Error("رفع الصورة فشل");
-
-  const { data } = supabase.storage.from("media").getPublicUrl(path);
-  return data.publicUrl;
 }
 
 export async function saveAbout(
@@ -108,49 +90,3 @@ export async function deleteSlide(formData: FormData) {
   refreshPublic();
 }
 
-export async function addAchievement(
-  _prev: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
-  await requireAdmin();
-  const title = String(formData.get("title") ?? "").trim();
-  const body = String(formData.get("body") ?? "").trim();
-  const image = formData.get("image");
-
-  if (!title) return { error: "عنوان الإنجاز مطلوب" };
-  if (!(image instanceof File) || image.size === 0) {
-    return { error: "اختار صورة للإنجاز" };
-  }
-
-  try {
-    const imageUrl = await uploadPublicImage(image, "achievements");
-    const supabase = createAdminClient();
-    const { data: last } = await supabase
-      .from("achievements")
-      .select("sort_order")
-      .order("sort_order", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const { error } = await supabase.from("achievements").insert({
-      title,
-      body,
-      image_url: imageUrl,
-      sort_order: (last?.sort_order ?? 0) + 1,
-    });
-    if (error) return { error: "إضافة الإنجاز فشلت" };
-
-    refreshPublic();
-    return { success: "تم إضافة الإنجاز" };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "حصل خطأ" };
-  }
-}
-
-export async function deleteAchievement(formData: FormData) {
-  await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  const supabase = createAdminClient();
-  await supabase.from("achievements").delete().eq("id", id);
-  refreshPublic();
-}

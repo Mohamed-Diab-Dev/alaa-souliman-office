@@ -13,7 +13,9 @@ export default async function AdminOfficesPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black text-forest">مكاتب النائب</h1>
-        <p className="mt-2 text-muted">أضف المقرات. جدول الأيام والمواعيد بيتحدد من صفحة المواعيد.</p>
+        <p className="mt-2 text-muted">
+          أضف المقرات. الأيام من جدول المواعيد، والحجوزات من صفحة حجوزات المواطنين.
+        </p>
       </div>
 
       <div className="rounded-3xl bg-white p-6 card-shadow">

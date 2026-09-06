@@ -1,67 +1,73 @@
+import { AchievementMedia } from "@/components/achievement-media";
+import { Emblem } from "@/components/emblem";
 import { getPublicContent } from "@/lib/data/public";
 
 export const revalidate = 60;
 
+function galleryNumber(value: number) {
+  return String(value)
+    .padStart(2, "0")
+    .replace(/\d/g, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]);
+}
+
 export default async function AchievementsPage() {
-  const { achievements, siteName } = await getPublicContent();
+  const { achievements } = await getPublicContent();
 
   return (
-    <main className="pattern-grid flex-1">
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        <p className="text-sm font-bold text-gold">سجل العمل</p>
-        <h1 className="mt-2 text-4xl font-black text-forest">إنجازات {siteName}</h1>
-        <p className="mt-3 max-w-2xl text-lg leading-8 text-muted">
-          الصورة بتحكي الإنجاز، والكلام للتوضيح. الصفحة دي مفتوحة للجميع.
-        </p>
+    <main className="achievement-stage flex-1">
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-gold/15 blur-3xl" />
+          <div className="absolute -right-16 bottom-0 h-80 w-80 rounded-full bg-forest/20 blur-3xl" />
+        </div>
+        <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-10 md:pt-14">
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white/50 px-3 py-1 text-sm font-bold text-forest backdrop-blur-md">
+                <Emblem className="h-6 w-6" />
+                سجل العمل الميداني
+              </div>
+              <h1 className="mt-4 max-w-3xl text-4xl font-black leading-[1.25] text-forest md:text-6xl">
+                إنجازات تتشاف
+                <span className="block text-gold">قبل ما تتقال</span>
+              </h1>
+              <p className="mt-4 max-w-2xl text-lg leading-9 text-muted">
+                الصورة كارت، والقصة على الصفحة. كل إنجاز بيتبادل يمين وشمال.
+              </p>
+            </div>
+            <div className="rounded-[1.6rem] border border-gold/25 bg-forest-deep px-6 py-5 text-cream shadow-[0_20px_50px_-28px_rgba(8,36,28,0.8)]">
+              <p className="text-sm font-bold text-gold-soft">عدد الإنجازات</p>
+              <p
+                className="mt-1 font-black leading-none tracking-tight text-cream"
+                style={{ fontSize: "3.4rem" }}
+              >
+                {galleryNumber(achievements.length)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
 
+      <div className="mx-auto max-w-6xl space-y-6 px-4 pb-16">
         {achievements.length === 0 ? (
-          <div className="mt-10 rounded-3xl bg-white p-10 text-center card-shadow">
-            <p className="text-xl font-bold text-forest">لسه مفيش إنجازات منشورة</p>
-            <p className="mt-2 text-muted">الأدمن يقدر يضيفها من لوحة التحكم.</p>
+          <div className="rounded-[2rem] border border-gold/20 bg-white/70 p-12 text-center backdrop-blur-md card-shadow">
+            <p className="text-2xl font-black text-forest">لسه مفيش إنجازات منشورة</p>
+            <p className="mt-2 text-lg text-muted">
+              أول ما المكتب يضيف إنجاز، هيظهر هنا بصورة كبيرة وقصة واضحة.
+            </p>
           </div>
         ) : (
-          <div className="mt-10 grid gap-5 md:grid-cols-12">
-            {achievements.map((item, index) => {
-              const featured = index === 0;
-              const wide = index % 5 === 1 || index % 5 === 2;
-              return (
-                <article
-                  key={item.id}
-                  className={`group overflow-hidden rounded-[2rem] bg-forest-deep text-cream card-shadow ${
-                    featured
-                      ? "md:col-span-12 md:grid md:grid-cols-2"
-                      : wide
-                        ? "md:col-span-7"
-                        : "md:col-span-5"
-                  }`}
-                >
-                  <div className={featured ? "min-h-80" : "min-h-64"}>
-                    {item.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.image_url}
-                        alt={item.title}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="h-full min-h-64 bg-forest" />
-                    )}
-                  </div>
-                  <div className="p-6 md:p-8">
-                    <p className="text-xs font-bold tracking-[0.2em] text-gold-soft">
-                      إنجاز
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black leading-10">{item.title}</h2>
-                    {item.body ? (
-                      <p className="mt-3 whitespace-pre-line leading-8 text-cream/85">
-                        {item.body}
-                      </p>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+          achievements.map((item, index) => (
+            <AchievementMedia
+              key={item.id}
+              title={item.title}
+              body={item.body}
+              images={item.images}
+              variant={index === 0 ? "hero" : "tile"}
+              number={galleryNumber(index + 1)}
+              flip={index % 2 === 1}
+            />
+          ))
         )}
       </div>
     </main>

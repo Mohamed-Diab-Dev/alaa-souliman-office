@@ -7,8 +7,10 @@ const links = [
   { href: "/admin/citizens", label: "تسجيل المواطنين" },
   { href: "/admin/requests", label: "الطلبات" },
   { href: "/admin/offices", label: "المكاتب" },
-  { href: "/admin/schedule", label: "المواعيد" },
+  { href: "/admin/schedule", label: "جدول المواعيد" },
+  { href: "/admin/bookings", label: "حجوزات المواطنين" },
   { href: "/admin/content", label: "المحتوى" },
+  { href: "/admin/achievements", label: "الإنجازات" },
   { href: "/admin/settings", label: "الإعدادات" },
 ];
 

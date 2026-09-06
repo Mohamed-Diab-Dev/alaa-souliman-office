@@ -58,9 +58,17 @@ on conflict (id) do nothing;
 
 create table if not exists achievements (
   id uuid primary key default gen_random_uuid(),
-  image_url text not null,
+  image_url text not null default '',
   title text not null,
   body text not null default '',
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists achievement_images (
+  id uuid primary key default gen_random_uuid(),
+  achievement_id uuid not null references achievements (id) on delete cascade,
+  image_url text not null,
   sort_order int not null default 0,
   created_at timestamptz not null default now()
 );
@@ -207,6 +215,7 @@ alter table citizen_phones enable row level security;
 alter table landing_slides enable row level security;
 alter table about_section enable row level security;
 alter table achievements enable row level security;
+alter table achievement_images enable row level security;
 alter table offices enable row level security;
 alter table office_dates enable row level security;
 alter table time_slots enable row level security;
@@ -221,6 +230,9 @@ create policy "public_read_about" on about_section
   for select using (true);
 
 create policy "public_read_achievements" on achievements
+  for select using (true);
+
+create policy "public_read_achievement_images" on achievement_images
   for select using (true);
 
 create policy "public_read_settings" on site_settings

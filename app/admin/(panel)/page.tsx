@@ -20,7 +20,7 @@ export default async function AdminHomePage() {
     { label: "المواطنون", value: citizens.count ?? 0, href: "/admin/citizens" },
     { label: "كل الطلبات", value: requests.count ?? 0, href: "/admin/requests" },
     { label: "طلبات جديدة", value: pending.count ?? 0, href: "/admin/requests" },
-    { label: "مواعيد مؤكدة", value: appointments.count ?? 0, href: "/admin/schedule" },
+    { label: "مواعيد مؤكدة", value: appointments.count ?? 0, href: "/admin/bookings" },
   ];
 
   return (

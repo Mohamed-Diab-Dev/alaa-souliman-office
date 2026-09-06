@@ -26,12 +26,19 @@ export type AboutSection = {
   image_url: string;
 };
 
+export type AchievementImage = {
+  id: string;
+  image_url: string;
+  sort_order: number;
+};
+
 export type Achievement = {
   id: string;
   image_url: string;
   title: string;
   body: string;
   sort_order: number;
+  images: AchievementImage[];
 };
 
 export type Office = {

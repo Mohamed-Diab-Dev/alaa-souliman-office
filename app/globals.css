@@ -33,6 +33,26 @@ body {
   font-family: var(--font-cairo), "Segoe UI", Tahoma, sans-serif;
 }
 
+a,
+button,
+label,
+select,
+summary,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="file"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--gold) 40%, white);
 }
@@ -69,4 +89,30 @@ body {
 textarea.field {
   height: auto;
   padding: 1rem;
+}
+
+.achievement-stage {
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--gold) 18%, transparent), transparent 32%),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--forest) 16%, transparent), transparent 30%),
+    linear-gradient(180deg, #fbf6ec 0%, #f3ead6 42%, #efe4cf 100%);
+}
+
+.achievement-frame {
+  box-shadow:
+    0 28px 70px -32px rgba(8, 36, 28, 0.7),
+    inset 0 0 0 1px color-mix(in srgb, var(--gold) 28%, transparent);
+}
+
+.achievement-kenburns {
+  animation: achievement-kenburns 14s ease-out forwards;
+}
+
+@keyframes achievement-kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
 }

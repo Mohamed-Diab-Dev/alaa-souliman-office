@@ -27,6 +27,7 @@ export async function saveOffice(
   if (error) return { error: "حفظ المكتب فشل" };
   revalidatePath("/admin/offices");
   revalidatePath("/admin/schedule");
+  revalidatePath("/admin/bookings");
   return { success: "تم حفظ المكتب" };
 }
 
@@ -37,4 +38,5 @@ export async function deleteOffice(formData: FormData) {
   await supabase.from("offices").delete().eq("id", id);
   revalidatePath("/admin/offices");
   revalidatePath("/admin/schedule");
+  revalidatePath("/admin/bookings");
 }

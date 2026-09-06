@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { imagesFromAchievementRow } from "@/lib/achievement-images";
 import { SITE_DEFAULT_NAME } from "@/lib/constants";
 import { createAdminClient, hasSupabaseEnv } from "@/lib/supabase/admin";
 import type { AboutSection, Achievement, LandingSlide } from "@/lib/types";
@@ -37,9 +38,21 @@ async function loadPublicContent() {
       .maybeSingle(),
     supabase
       .from("achievements")
-      .select("id, image_url, title, body, sort_order")
+      .select("id, image_url, title, body, sort_order, achievement_images(id, image_url, sort_order)")
       .order("sort_order", { ascending: true }),
   ]);
+
+  let achievementRows = achievementsRes.data ?? [];
+  if (achievementsRes.error) {
+    const fallback = await supabase
+      .from("achievements")
+      .select("id, image_url, title, body, sort_order")
+      .order("sort_order", { ascending: true });
+    achievementRows = (fallback.data ?? []).map((row) => ({
+      ...row,
+      achievement_images: [],
+    }));
+  }
 
   const settings = new Map(
     (settingsRes.data ?? []).map((row) => [row.key, row.value]),
@@ -52,7 +65,17 @@ async function loadPublicContent() {
       "لا توجد مواعيد متاحة حالياً.",
     slides: (slidesRes.data ?? []) as LandingSlide[],
     about: (aboutRes.data as AboutSection | null) ?? fallbackAbout,
-    achievements: (achievementsRes.data ?? []) as Achievement[],
+    achievements: achievementRows.map((row) => {
+      const images = imagesFromAchievementRow(row);
+      return {
+        id: row.id,
+        image_url: images[0]?.image_url || row.image_url,
+        title: row.title,
+        body: row.body,
+        sort_order: row.sort_order,
+        images,
+      } satisfies Achievement;
+    }),
   };
 }
 

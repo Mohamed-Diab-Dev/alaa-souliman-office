@@ -8,6 +8,7 @@ import type { ActionResult } from "@/lib/types";
 
 function refresh() {
   revalidatePath("/admin/schedule");
+  revalidatePath("/admin/bookings");
   revalidatePath("/book");
 }
 
